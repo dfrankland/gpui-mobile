@@ -324,6 +324,19 @@ pub fn android_key_to_keystroke(
     meta_state: i32,
     unicode_char: u32,
 ) -> Option<Keystroke> {
+    // Soft keyboards often send AKEYCODE_UNKNOWN (0) with a unicode_char when
+    // committing text via InputConnection rather than a physical key. Synthesise
+    // a Keystroke so the character reaches gpui's PlatformInputHandler and
+    // focused InputElement components.
+    if key_code == AKEYCODE_UNKNOWN && unicode_char != 0 {
+        let c = char::from_u32(unicode_char)?;
+        return Some(Keystroke {
+            modifiers: android_meta_to_modifiers(meta_state),
+            key: c.to_lowercase().to_string(),
+            key_char: Some(c.to_string()),
+        });
+    }
+
     let key = android_keycode_to_key(key_code)?;
     let modifiers = android_meta_to_modifiers(meta_state);
 
